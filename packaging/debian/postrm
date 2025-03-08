@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "purge" ]; then
+    rm -f /lib/udev/rules.d/99-af-pro-display.rules
+fi
+
+# Reload systemd daemon
+systemctl daemon-reload || true
+
+#DEBHELPER#

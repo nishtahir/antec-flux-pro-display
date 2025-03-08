@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+# Reload udev rules
+udevadm control --reload-rules || true
+udevadm trigger || true
+
+# Add plugdev group if it doesn't exist
+getent group plugdev >/dev/null || groupadd -r plugdev
+
+# Add all users in sudo group to plugdev group
+for user in $(getent group sudo | cut -d: -f4 | tr ',' ' '); do
+    usermod -a -G plugdev "$user" || true
+done
+
+# Reload systemd
+systemctl daemon-reload || true
+
+# Enable and start service on fresh install
+if [ "$1" = "configure" ]; then
+    systemctl enable af-pro-display.service || true
+    systemctl start af-pro-display.service || true
+fi
+
+
+#DEBHELPER#

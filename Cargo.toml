@@ -1,0 +1,28 @@
+[package]
+name = "af-pro-display"
+description = "Display the temperature of the CPU and GPU on the Antec Flux Pro display"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nvml-wrapper = "0.10.0"
+rusb = "0.9.4"
+systemstat = "0.2.4"
+
+[package.metadata.deb]
+maintainer = "Nish Tahir <nishtahir@outlook.com>"
+copyright = "2024, Nish Tahir <nishtahir@outlook.com>"
+license-file = ["LICENSE", "4"]
+depends = "$auto"
+section = "utility"
+priority = "optional"
+assets = [
+    ["target/release/af-pro-display", "usr/bin/", "755"],
+    ["packaging/udev/99-af-pro-display.rules", "lib/udev/rules.d/", "644"],
+    ["packaging/systemd/af-pro-display.service", "lib/systemd/system/", "644"],
+]
+conf-files = [
+    "/lib/udev/rules.d/99-af-pro-display.rules",
+    "/lib/systemd/system/af-pro-display.service"
+]
+maintainer-scripts = "packaging/debian/"

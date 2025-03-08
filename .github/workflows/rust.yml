@@ -1,0 +1,43 @@
+name: Rust
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb --locked
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Build binary
+        run: cargo build --release
+
+      - name: Generate build SHA-256
+        working-directory: target/release
+        run: shasum -a 256 af-pro-display > af-pro-display.sha256
+
+      - name: Build Debian package
+        run: cargo deb --output target/debian/af-pro-display.deb
+
+      - name: Generate deb SHA-256
+        working-directory: target/debian
+        run: shasum -a 256 af-pro-display.deb > af-pro-display.deb.sha256
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            target/release/af-pro-display
+            target/release/af-pro-display.sha256
+            target/debian/af-pro-display.deb
+            target/debian/af-pro-display.deb.sha256
