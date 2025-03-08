@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+# Stop service before removal
+if [ -d /run/systemd/system ] && [ "$1" = remove ]; then
+    systemctl stop af-pro-display.service || true
+    systemctl disable af-pro-display.service || true
+fi
+
+#DEBHELPER#
