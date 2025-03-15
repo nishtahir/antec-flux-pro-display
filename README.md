@@ -4,14 +4,18 @@ This is a service that displays CPU and GPU temperatures on the [Antec Flux Pro]
 
 ## Installation
 
-### Using the Debian Package (Recommended)
+### Quick Start (Recommended)
+
+```
+$ curl -fsSL https://raw.githubusercontent.com/nishtahir/antec-flux-pro-display/refs/heads/main/.ci/install.sh | bash 
+```
+
+### Using the Debian Package
+
+Download the latest debian package from the [releases](https://github.com/nishtahir/antec-flux-pro-display/releases) page.
 
 ```bash
-# Install the package
-sudo dpkg -i af-pro-display_0.1.0_amd64.deb
-sudo apt install -f  # Install any missing dependencies
-
-# Log out and log back in for group changes to take effect
+sudo apt install your-download-path/af-pro-display.deb
 ```
 
 ### Building from Source
@@ -30,7 +34,7 @@ cargo build --release
 
 3. Build the debian package:
 ```bash
-cargo install cargo-deb  # Only needed once
+cargo install cargo-deb
 cargo deb
 ```
 
@@ -93,7 +97,6 @@ journalctl -u af-pro-display -n 50 --no-pager
 
 ## Resources
 * [cargo-deb](https://crates.io/crates/cargo-deb)
-* []
 * Inspired by previous work written by [AKoskovich](https://github.com/AKoskovich/antec_flux_pro_display_service)
 
 ## License
