@@ -18,10 +18,25 @@ pub enum UsbError {
 }
 
 fn get_available_gpu() -> AvailableGpu {
-    let nvml = Nvml::init();
+    let nvml = Nvml::builder().lib_path(std::ffi::OsStr::new("libnvidia-ml.so.1")).init();
     match nvml {
-        Ok(nvml) => AvailableGpu::Nvidia(nvml),
-        Err(_) => AvailableGpu::Unknown,
+        Ok(nvml) => {
+            match nvml.sys_driver_version() {
+                Ok(driver_version) => println!("NVML initialized, driver version: {}", driver_version),
+                Err(e) => eprintln!("Failed to get NVML driver version: {}", e),
+            }
+
+            match nvml.device_count() {
+                Ok(count) => println!("Found {} NVML-supported GPUs", count),
+                Err(e) => eprintln!("Error retrieving NVML device count: {}", e),
+            }
+
+            AvailableGpu::Nvidia(nvml)
+        }
+        Err(e) => {
+            eprintln!("NVML initialization failed: {}", e);
+            AvailableGpu::Unknown
+        }
     }
 }
 
