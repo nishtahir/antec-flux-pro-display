@@ -1,7 +1,7 @@
 [package]
 name = "af-pro-display"
 description = "Display the temperature of the CPU and GPU on the Antec Flux Pro display"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
