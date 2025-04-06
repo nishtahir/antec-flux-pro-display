@@ -5,6 +5,7 @@ version = "0.1.1"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.97"
 nvml-wrapper = "0.10.0"
 rusb = "0.9.4"
 systemstat = "0.2.4"
