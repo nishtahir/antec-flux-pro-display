@@ -95,6 +95,21 @@ journalctl -u af-pro-display -n 50 --no-pager
 - Automatic USB device detection and management
 - Systemd service integration
 
+## Configuration
+
+The service can be configured using the `config.toml` file. The default path is `~/.config/af-pro-display/config.toml` but this can be overridden by the `--config` flag.
+
+The `config.toml` file has the following fields:
+
+- `cpu_device`: The path to the CPU temperature file.
+- `polling_interval`: The polling interval in milliseconds.
+
+Example configuration:
+```toml
+cpu_device = "/sys/class/hwmon/hwmon0/temp1_input"
+polling_interval = 200
+```
+
 ## Resources
 * [cargo-deb](https://crates.io/crates/cargo-deb)
 * Inspired by previous work written by [AKoskovich](https://github.com/AKoskovich/antec_flux_pro_display_service)

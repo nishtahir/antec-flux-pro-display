@@ -47,7 +47,7 @@ impl UsbDevice {
         }
     }
 
-    pub fn send_payload(&self, cpu_temp: Option<f32>, gpu_temp: Option<f32>) {
+    pub fn send_payload(&self, cpu_temp: &Option<f32>, gpu_temp: &Option<f32>) {
         let payload = generate_payload(cpu_temp, gpu_temp);
 
         let config_desc = match self.handle.device().config_descriptor(0) {
@@ -84,7 +84,7 @@ impl UsbDevice {
     }
 }
 
-fn generate_payload(cpu_temp: Option<f32>, gpu_temp: Option<f32>) -> Vec<u8> {
+fn generate_payload(cpu_temp: &Option<f32>, gpu_temp: &Option<f32>) -> Vec<u8> {
     let mut payload = Vec::<u8>::new();
     payload.push(85);
     payload.push(170);
@@ -107,7 +107,7 @@ fn generate_payload(cpu_temp: Option<f32>, gpu_temp: Option<f32>) -> Vec<u8> {
     payload
 }
 
-fn encode_temperature(temp: Option<f32>) -> (u8, u8, u8) {
+fn encode_temperature(temp: &Option<f32>) -> (u8, u8, u8) {
     if let Some(temp) = temp {
         let ones = (temp / 10.0) as u8;
         let tens = (temp % 10.0) as u8;
@@ -123,14 +123,14 @@ mod test {
 
     #[test]
     fn test_generate_payload() {
-        let actual = generate_payload(Some(24.0), Some(16.0));
+        let actual = generate_payload(&Some(24.0), &Some(16.0));
         let expected = vec![85, 170, 1, 1, 6, 2, 4, 0, 1, 6, 0, 20];
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_generate_payload_with_no_gpu() {
-        let actual = generate_payload(Some(24.0), None);
+        let actual = generate_payload(&Some(24.0), &None);
         let expected = vec![85, 170, 1, 1, 6, 2, 4, 0, 238, 238, 238, 215];
         assert_eq!(expected, actual);
     }
