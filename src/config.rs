@@ -16,7 +16,7 @@ impl Default for Config {
         Self {
             cpu_device: default_cpu_device(),
             gpu_device: None,
-            polling_interval: 500,
+            polling_interval: 200,
         }
     }
 }

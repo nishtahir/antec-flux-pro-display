@@ -8,7 +8,7 @@ ExecStart=/usr/bin/af-pro-display
 Restart=always
 RestartSec=5
 ProtectSystem=strict
-ProtectHome=true
+ProtectHome=false
 PrivateTmp=true
 NoNewPrivileges=true
 
