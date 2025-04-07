@@ -1,4 +1,8 @@
 use anyhow::{Context, Result};
+use libamdgpu_top::{
+    AMDGPU::{GpuMetrics, MetricsInfo},
+    DevicePath,
+};
 use nvml_wrapper::{Nvml, enum_wrappers::device::TemperatureSensor};
 
 pub struct NvidiaGpu {
@@ -25,8 +29,27 @@ impl NvidiaGpu {
     }
 }
 
+pub struct AmdGpu {
+    device_path: DevicePath,
+}
+
+impl AmdGpu {
+    pub fn new(device_path: DevicePath) -> Self {
+        Self { device_path }
+    }
+
+    pub fn temp(&self) -> Option<f32> {
+        let gpu_metrics = GpuMetrics::get_from_sysfs_path(self.device_path.sysfs_path.clone())
+            .inspect_err(|e| eprintln!("Error getting AMD GPU metrics: {:?}", e))
+            .ok()?;
+        let temperature: Option<Vec<u16>> = gpu_metrics.get_average_temperature_core();
+        temperature.map(|temp| temp[0] as f32 / 100.0)
+    }
+}
+
 pub enum AvailableGpu {
     Nvidia(NvidiaGpu),
+    Amd(AmdGpu),
     Unknown,
 }
 
@@ -39,12 +62,20 @@ impl AvailableGpu {
             return gpu;
         }
 
+        let maybe_amd =
+            try_get_amdgpu_gpu().inspect_err(|e| eprintln!("Failed to get AMD GPU. Error: {}", e));
+
+        if let Ok(gpu) = maybe_amd {
+            return gpu;
+        }
+
         AvailableGpu::Unknown
     }
 
     pub fn temp(&self) -> Option<f32> {
         match self {
             AvailableGpu::Nvidia(gpu) => gpu.temp(),
+            AvailableGpu::Amd(gpu) => gpu.temp(),
             AvailableGpu::Unknown => None,
         }
     }
@@ -67,4 +98,15 @@ fn try_get_nvidia_gpu() -> Result<AvailableGpu> {
 
     println!("Found {} NVML-supported GPUs", device_count);
     Ok(AvailableGpu::Nvidia(NvidiaGpu::new(nvml)))
+}
+
+fn try_get_amdgpu_gpu() -> Result<AvailableGpu> {
+    let device_path = DevicePath::get_device_path_list();
+
+    if device_path.is_empty() {
+        return Err(anyhow::anyhow!("No AMD GPU devices found"));
+    }
+
+    println!("Found {} AMD GPU devices", device_path.len());
+    Ok(AvailableGpu::Amd(AmdGpu::new(device_path[0].clone())))
 }
