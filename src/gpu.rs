@@ -17,23 +17,23 @@ impl NvidiaGpu {
     pub fn temp(&self) -> Option<f32> {
         self.nvml
             .device_by_index(self.device_index)
-            .inspect_err(|e| eprintln!("Error getting Nvidia GPU device: {:?}", e))
+            .inspect_err(|e| eprintln!("Error getting Nvidia GPU device: {e:?}"))
             .and_then(|device| device.temperature(TemperatureSensor::Gpu))
-            .inspect_err(|e| eprintln!("Error getting Nvidia GPU temperature: {:?}", e))
+            .inspect_err(|e| eprintln!("Error getting Nvidia GPU temperature: {e:?}"))
             .map(|temp| temp as f32)
             .ok()
     }
 }
 
 pub enum AvailableGpu {
-    Nvidia(NvidiaGpu),
+    Nvidia(Box<NvidiaGpu>),
     Unknown,
 }
 
 impl AvailableGpu {
     pub fn get_available_gpu() -> AvailableGpu {
-        let maybe_nvidia = try_get_nvidia_gpu()
-            .inspect_err(|e| eprintln!("Failed to get Nvidia GPU. Error: {}", e));
+        let maybe_nvidia =
+            try_get_nvidia_gpu().inspect_err(|e| eprintln!("Failed to get Nvidia GPU. Error: {e}"));
 
         if let Ok(gpu) = maybe_nvidia {
             return gpu;
@@ -59,12 +59,12 @@ fn try_get_nvidia_gpu() -> Result<AvailableGpu> {
     let driver_version = nvml
         .sys_driver_version()
         .context("Failed to get NVML driver version")?;
-    println!("NVML initialized, driver version: {}", driver_version);
+    println!("NVML initialized, driver version: {driver_version}");
 
     let device_count = nvml
         .device_count()
         .context("Failed to get NVML device count")?;
 
-    println!("Found {} NVML-supported GPUs", device_count);
-    Ok(AvailableGpu::Nvidia(NvidiaGpu::new(nvml)))
+    println!("Found {device_count} NVML-supported GPUs");
+    Ok(AvailableGpu::Nvidia(Box::new(NvidiaGpu::new(nvml))))
 }

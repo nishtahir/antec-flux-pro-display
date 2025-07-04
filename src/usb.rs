@@ -30,7 +30,7 @@ impl UsbDevice {
                 let devices = match rusb::devices() {
                     Ok(devices) => devices,
                     Err(e) => {
-                        eprintln!("Error getting devices: {}", e);
+                        eprintln!("Error getting devices: {e}");
                         std::process::exit(1);
                     }
                 };
@@ -39,7 +39,7 @@ impl UsbDevice {
                     let device_desc = match device.device_descriptor() {
                         Ok(desc) => desc,
                         Err(e) => {
-                            eprintln!("Error getting device descriptor: {}", e);
+                            eprintln!("Error getting device descriptor: {e}");
                             std::process::exit(1);
                         }
                     };
@@ -53,7 +53,7 @@ impl UsbDevice {
                     }
                 }
                 eprintln!("USB device not found. Is it connected?");
-                eprintln!("Looking for device {:04x}:{:04x}", VENDOR_ID, PRODUCT_ID);
+                eprintln!("Looking for device {VENDOR_ID:04x}:{PRODUCT_ID:04x}");
                 std::process::exit(1);
             }
         }
@@ -65,7 +65,7 @@ impl UsbDevice {
         let config_desc = match self.handle.device().config_descriptor(0) {
             Ok(desc) => desc,
             Err(e) => {
-                eprintln!("Error getting config descriptor: {}", e);
+                eprintln!("Error getting config descriptor: {e}");
                 std::process::exit(1);
             }
         };
@@ -107,7 +107,7 @@ impl UsbDevice {
         {
             Ok(_) => (),
             Err(e) => {
-                eprintln!("Error writing bulk: {:?}", e);
+                eprintln!("Error writing bulk: {e:?}");
                 std::process::exit(1);
             }
         }
@@ -115,12 +115,7 @@ impl UsbDevice {
 }
 
 fn generate_payload(cpu_temp: &Option<f32>, gpu_temp: &Option<f32>) -> Vec<u8> {
-    let mut payload = Vec::<u8>::new();
-    payload.push(85);
-    payload.push(170);
-    payload.push(1);
-    payload.push(1);
-    payload.push(6);
+    let mut payload: Vec<u8> = vec![85, 170, 1, 1, 6];
 
     let encoded_temp = encode_temperature(cpu_temp);
     payload.push(encoded_temp.0);
