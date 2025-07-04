@@ -12,7 +12,19 @@ pub struct UsbDevice {
 impl UsbDevice {
     pub fn open(vendor_id: u16, product_id: u16) -> Result<Self> {
         match rusb::open_device_with_vid_pid(vendor_id, product_id) {
-            Some(handle) => Ok(Self { handle }),
+            Some(handle) => {
+                // Detach the kernel driver if it is attached
+                if handle.kernel_driver_active(0).unwrap_or(false) {
+                    handle.detach_kernel_driver(0).unwrap_or(());
+                }
+                // Claim the interface so we can communicate with the device
+                // This is necessary to access the device and avoid IO errors
+                handle.claim_interface(0).unwrap_or_else(|e| {
+                    eprintln!("Error claiming interface: {e:?}");
+                    std::process::exit(1);
+                });
+                Ok(Self { handle })
+            }
             None => {
                 // Check if device is visible at all
                 let devices = match rusb::devices() {
@@ -70,6 +82,24 @@ impl UsbDevice {
             // This appears to be the correct endpoint on my machine
             // Seems reasonable as the default
             .unwrap_or(0x03);
+
+        // Detach the kernel driver if it is attached
+        if self.handle.kernel_driver_active(0).unwrap_or(false) {
+            self.handle.detach_kernel_driver(0).unwrap_or_else(|e| {
+                eprintln!("Error detaching kernel driver: {e}");
+                std::process::exit(1);
+            });
+        }
+        self.handle.release_interface(0).unwrap_or_else(|e| {
+            eprintln!("Error releasing interface: {e}");
+            std::process::exit(1);
+        });
+        // Claim the interface so we can communicate with the device
+        // This is necessary to access the device and avoid IO errors
+        self.handle.claim_interface(0).unwrap_or_else(|e| {
+            eprintln!("Error claiming interface: {e:?}");
+            std::process::exit(1);
+        });
 
         match self
             .handle
