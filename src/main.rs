@@ -5,6 +5,7 @@ mod usb;
 
 use anyhow::Result;
 use config::{Config, FromConfigFile};
+use cpu::default_cpu_device;
 use gpu::AvailableGpu;
 use std::{fs, path::PathBuf, time::Duration};
 use usb::UsbDevice;
@@ -35,13 +36,11 @@ fn main() -> Result<()> {
 
     let config = Config::from_config_file(&config_path)?;
     let device = UsbDevice::open(usb::VENDOR_ID, usb::PRODUCT_ID)?;
+    let cpu = config.cpu_device.or_else(default_cpu_device);
     let gpu = AvailableGpu::get_available_gpu();
 
     loop {
-        let cpu_temp = &config
-            .cpu_device
-            .as_ref()
-            .and_then(|path| cpu::read_temp(path));
+        let cpu_temp = &cpu.as_ref().and_then(|path| cpu::read_temp(path));
         let gpu_temp = &gpu.temp();
 
         device.send_payload(cpu_temp, gpu_temp);

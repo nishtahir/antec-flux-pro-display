@@ -1,4 +1,3 @@
-use crate::cpu::default_cpu_device;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
 use serde_derive::{Deserialize, Serialize};
@@ -14,7 +13,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            cpu_device: default_cpu_device(),
+            cpu_device: None,
             gpu_device: None,
             polling_interval: 1000,
         }
