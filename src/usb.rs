@@ -12,13 +12,25 @@ pub struct UsbDevice {
 impl UsbDevice {
     pub fn open(vendor_id: u16, product_id: u16) -> Result<Self> {
         match rusb::open_device_with_vid_pid(vendor_id, product_id) {
-            Some(handle) => Ok(Self { handle }),
+            Some(handle) => {
+                // Detach the kernel driver if it is attached
+                if handle.kernel_driver_active(0).unwrap_or(false) {
+                    handle.detach_kernel_driver(0).unwrap_or(());
+                }
+                // Claim the interface so we can communicate with the device
+                // This is necessary to access the device and avoid IO errors
+                handle.claim_interface(0).unwrap_or_else(|e| {
+                    eprintln!("Error claiming interface: {e:?}");
+                    std::process::exit(1);
+                });
+                Ok(Self { handle })
+            }
             None => {
                 // Check if device is visible at all
                 let devices = match rusb::devices() {
                     Ok(devices) => devices,
                     Err(e) => {
-                        eprintln!("Error getting devices: {}", e);
+                        eprintln!("Error getting devices: {e}");
                         std::process::exit(1);
                     }
                 };
@@ -27,7 +39,7 @@ impl UsbDevice {
                     let device_desc = match device.device_descriptor() {
                         Ok(desc) => desc,
                         Err(e) => {
-                            eprintln!("Error getting device descriptor: {}", e);
+                            eprintln!("Error getting device descriptor: {e}");
                             std::process::exit(1);
                         }
                     };
@@ -41,7 +53,7 @@ impl UsbDevice {
                     }
                 }
                 eprintln!("USB device not found. Is it connected?");
-                eprintln!("Looking for device {:04x}:{:04x}", VENDOR_ID, PRODUCT_ID);
+                eprintln!("Looking for device {VENDOR_ID:04x}:{PRODUCT_ID:04x}");
                 std::process::exit(1);
             }
         }
@@ -53,7 +65,7 @@ impl UsbDevice {
         let config_desc = match self.handle.device().config_descriptor(0) {
             Ok(desc) => desc,
             Err(e) => {
-                eprintln!("Error getting config descriptor: {}", e);
+                eprintln!("Error getting config descriptor: {e}");
                 std::process::exit(1);
             }
         };
@@ -71,13 +83,31 @@ impl UsbDevice {
             // Seems reasonable as the default
             .unwrap_or(0x03);
 
+        // Detach the kernel driver if it is attached
+        if self.handle.kernel_driver_active(0).unwrap_or(false) {
+            self.handle.detach_kernel_driver(0).unwrap_or_else(|e| {
+                eprintln!("Error detaching kernel driver: {e}");
+                std::process::exit(1);
+            });
+        }
+        self.handle.release_interface(0).unwrap_or_else(|e| {
+            eprintln!("Error releasing interface: {e}");
+            std::process::exit(1);
+        });
+        // Claim the interface so we can communicate with the device
+        // This is necessary to access the device and avoid IO errors
+        self.handle.claim_interface(0).unwrap_or_else(|e| {
+            eprintln!("Error claiming interface: {e:?}");
+            std::process::exit(1);
+        });
+
         match self
             .handle
             .write_bulk(endpoint_address, &payload, Duration::from_millis(1000))
         {
             Ok(_) => (),
             Err(e) => {
-                eprintln!("Error writing bulk: {:?}", e);
+                eprintln!("Error writing bulk: {e:?}");
                 std::process::exit(1);
             }
         }
@@ -85,12 +115,7 @@ impl UsbDevice {
 }
 
 fn generate_payload(cpu_temp: &Option<f32>, gpu_temp: &Option<f32>) -> Vec<u8> {
-    let mut payload = Vec::<u8>::new();
-    payload.push(85);
-    payload.push(170);
-    payload.push(1);
-    payload.push(1);
-    payload.push(6);
+    let mut payload: Vec<u8> = vec![85, 170, 1, 1, 6];
 
     let encoded_temp = encode_temperature(cpu_temp);
     payload.push(encoded_temp.0);

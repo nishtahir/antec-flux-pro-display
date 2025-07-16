@@ -1,12 +1,17 @@
 [package]
 name = "af-pro-display"
 description = "Display the temperature of the CPU and GPU on the Antec Flux Pro display"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
+authors = [
+    "Nish Tahir <nishtahir@outlook.com>",
+    "Anthony Batchelor <tony@ynottony.net>",
+]
 
 [dependencies]
 anyhow = "1.0.97"
 clap = { version = "4.5.35", features = ["derive"] }
+ctrlc = { version = "3.4.7", features = ["termination"] }
 nvml-wrapper = "0.10.0"
 rusb = "0.9.4"
 serde = "1.0.219"
@@ -17,18 +22,30 @@ toml = "0.8.20"
 
 [package.metadata.deb]
 maintainer = "Nish Tahir <nishtahir@outlook.com>"
-copyright = "2024, Nish Tahir <nishtahir@outlook.com>"
+copyright = "2024-2025, Nish Tahir <nishtahir@outlook.com>"
 license-file = ["LICENSE", "4"]
 depends = "$auto"
 section = "utility"
 priority = "optional"
 assets = [
-    ["target/release/af-pro-display", "usr/bin/", "755"],
-    ["packaging/udev/99-af-pro-display.rules", "lib/udev/rules.d/", "644"],
-    ["packaging/systemd/af-pro-display.service", "lib/systemd/system/", "644"],
+    [
+        "target/release/af-pro-display",
+        "usr/bin/",
+        "755",
+    ],
+    [
+        "packaging/udev/99-af-pro-display.rules",
+        "lib/udev/rules.d/",
+        "644",
+    ],
+    [
+        "packaging/systemd/af-pro-display.service",
+        "lib/systemd/system/",
+        "644",
+    ],
 ]
 conf-files = [
     "/lib/udev/rules.d/99-af-pro-display.rules",
-    "/lib/systemd/system/af-pro-display.service"
+    "/lib/systemd/system/af-pro-display.service",
 ]
 maintainer-scripts = "packaging/debian/"
