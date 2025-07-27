@@ -1,0 +1,23 @@
+[Unit]
+Description=Antec Flux Pro Display Service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/af-pro-display
+Restart=always
+RestartSec=5
+
+# Security hardening (user units are already sandboxed)
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+
+# Resource limits
+LimitNOFILE=1024
+MemoryMax=128M
+
+[Install]
+WantedBy=default.target
