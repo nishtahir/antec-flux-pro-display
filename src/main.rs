@@ -12,7 +12,6 @@ use clap::Parser;
 
 use config::{Config, FromConfigFile};
 use cpu::default_cpu_device;
-use gpu::AvailableGpu;
 use usb::UsbDevice;
 
 #[derive(clap::Parser)]
@@ -20,6 +19,27 @@ use usb::UsbDevice;
 struct Cli {
     #[arg(short, long, default_value = "~/.config/af-pro-display/config.toml")]
     config: String,
+}
+
+fn select_gpu(search: &Option<String>) -> Option<Box<dyn gpu::Gpu>> {
+    let mut selected = None;
+    for gpu in gpu::get_available_gpus() {
+        let name = gpu.name();
+        println!("{} Gpu: [{}]({}) - found", gpu.brand(), name, gpu.path());
+        match (selected.is_some(), &Some(name) == search) {
+            (false, _) => selected = Some(gpu),
+            (true, true) => selected = Some(gpu),
+            _ => (),
+        }
+    }
+
+    if let Some(d) = selected {
+        println!("{} Gpu: [{}]({}) - Selected", d.brand(), d.name(), d.path());
+        Some(d)
+    } else {
+        println!("No Gpu selection");
+        None
+    }
 }
 
 fn main() -> Result<()> {
@@ -41,7 +61,7 @@ fn main() -> Result<()> {
     let config = Config::from_config_file(&config_path)?;
     let device = UsbDevice::open(usb::VENDOR_ID, usb::PRODUCT_ID)?;
     let cpu = config.cpu_device.or_else(default_cpu_device);
-    let gpu = AvailableGpu::get_available_gpu();
+    let gpu_dev = select_gpu(&config.gpu_device);
 
     // Handle CTRL+C and other termination gracefully
     let run = running.clone();
@@ -53,9 +73,18 @@ fn main() -> Result<()> {
     // Loop until the program is terminated
     while running.load(Ordering::SeqCst) {
         let cpu_temp = &cpu.as_ref().and_then(|path| cpu::read_temp(path));
-        let gpu_temp = &gpu.temp();
+        let gpu_temp = gpu_dev
+            .as_ref()
+            .map(|d| match d.temp() {
+                Ok(temp) => Some(temp),
+                Err(err) => {
+                    println!("Could not read temp for {} ({})", d.name(), err);
+                    None
+                }
+            })
+            .flatten();
 
-        device.send_payload(cpu_temp, gpu_temp);
+        device.send_payload(cpu_temp, &gpu_temp);
         std::thread::sleep(Duration::from_millis(config.polling_interval));
     }
 
